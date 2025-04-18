@@ -38,7 +38,6 @@ class TempestPkceImplementation(LocalOAuth2ImplementationWithPkce):
         raw_token = await super().async_resolve_external_data(external_data)
         return {
             "access_token": raw_token.get("access_token"),
-            # reuse access_token as refresh_token fallback
             "refresh_token": raw_token.get("access_token"),
             "expires_in": int(raw_token.get("expires_in", 3600)),
             "token_type": raw_token.get("token_type", "Bearer"),
