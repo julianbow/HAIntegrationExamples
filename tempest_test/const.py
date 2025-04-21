@@ -1,9 +1,9 @@
+"""Constants."""
+
 import logging
 
 from homeassistant.config_entries import ConfigEntry
 
-# DOMAIN is a unique identifier for this integration.
-# custom_components/tempest_test/const.py
 CONF_ACCESS_TOKEN = "access_token"
 DOMAIN = "tempest_test"
 
@@ -14,11 +14,8 @@ CLIENT_ID = "9a14f12b-15f6-4843-b7b4-07e5418a3888"
 
 MANUFACTURER = "WeatherFlow"
 
-# DATA_SOURCE is a key used to store the user's selection (local or cloud) in the config entry.
 DATA_SOURCE = "data_source"
 
-# DATA_SOURCE_OPTIONS defines the available options the user can choose from.
-# The keys ("local" and "cloud") are used internally, while the values are human-readable.
 DATA_SOURCE_OPTIONS = {"local": "Local", "cloud": "Cloud"}
 
 LOGGER = logging.getLogger(__package__)

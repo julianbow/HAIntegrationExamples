@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
-
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP, Platform
 from homeassistant.core import Event, HomeAssistant, callback
@@ -32,8 +30,7 @@ CLOUD_PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.WEATHER]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """
-    Set up the Tempest Test integration from a config entry.
+    """Set up the Tempest Test integration from a config entry.
 
     Determines if the integration should run in cloud mode (if 'token' exists)
     or in local mode (no token) and then forwards the entry to the appropriate platforms.
@@ -41,9 +38,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Cloud mode: look for 'token' key in entry.data
     if "token" in entry.data:
         if WeatherFlowCloudDataUpdateCoordinator is None:
-            LOGGER.error("Cloud coordinator not available.")
+            LOGGER.error("Cloud coordinator not available")
             return False
-        LOGGER.debug("Setting up Tempest Test in cloud mode.")
         data_coordinator = WeatherFlowCloudDataUpdateCoordinator(hass, entry)
         await data_coordinator.async_config_entry_first_refresh()
         hass.data.setdefault(DOMAIN, {})[entry.entry_id] = data_coordinator
@@ -52,7 +48,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         return True
 
     # Local mode
-    LOGGER.debug("Setting up Tempest Test in local mode.")
     client = WeatherFlowListener()
 
     @callback
@@ -98,8 +93,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """
-    Unload a config entry.
+    """Unload a config entry.
 
     Unloads the platforms and cleans up integration data based on whether the integration
     is running in cloud mode or local mode.
@@ -110,33 +104,30 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ):
             hass.data[DOMAIN].pop(entry.entry_id, None)
         return unload_ok
-    else:
-        if unload_ok := await hass.config_entries.async_unload_platforms(
-            entry, LOCAL_PLATFORMS
-        ):
-            client: WeatherFlowListener = hass.data[DOMAIN].pop(entry.entry_id, None)
-            if client:
-                await client.stop_listening()
-        return unload_ok
+    if unload_ok := await hass.config_entries.async_unload_platforms(
+        entry, LOCAL_PLATFORMS
+    ):
+        client: WeatherFlowListener = hass.data[DOMAIN].pop(entry.entry_id, None)
+        if client:
+            await client.stop_listening()
+    return unload_ok
 
 
 async def async_remove_config_entry_device(
     hass: HomeAssistant, config_entry: ConfigEntry, device_entry: DeviceEntry
 ) -> bool:
-    """
-    Remove a config entry from a device.
+    """Remove a config entry from a device.
 
     For local mode, verifies that no devices managed by the integration match the given device entry.
     For cloud mode, adjust as needed.
     """
     if "token" in config_entry.data:
         return True
-    else:
-        client: WeatherFlowListener = hass.data[DOMAIN][config_entry.entry_id]
-        return not any(
-            identifier
-            for identifier in device_entry.identifiers
-            if identifier[0] == DOMAIN
-            for device in client.devices
-            if device.serial_number == identifier[1]
-        )
+    client: WeatherFlowListener = hass.data[DOMAIN][config_entry.entry_id]
+    return not any(
+        identifier
+        for identifier in device_entry.identifiers
+        if identifier[0] == DOMAIN
+        for device in client.devices
+        if device.serial_number == identifier[1]
+    )

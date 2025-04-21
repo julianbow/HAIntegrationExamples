@@ -2,13 +2,13 @@
     "config": {
         "step": {
             "user": {
-                "description": "Set up a WeatherFlow Forecast Station",
+                "description": "Set up a Tempest Station",
                 "data": {
                     "api_token": "Personal API token"
                 }
             },
             "reauth_confirm": {
-                "description": "Reauthenticate with WeatherFlow",
+                "description": "Reauthenticate with Tempest",
                 "data": {
                     "api_token": "[%key:component::weatherflow_cloud::config::step::user::data::api_token%]"
                 }
