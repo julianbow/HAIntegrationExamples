@@ -6,8 +6,6 @@ import asyncio
 import logging
 from typing import Any
 
-from pyweatherflowudp.client import EVENT_DEVICE_DISCOVERED, WeatherFlowListener
-from pyweatherflowudp.errors import ListenerError
 import voluptuous as vol
 
 from homeassistant import config_entries
@@ -33,7 +31,6 @@ _LOGGER = logging.getLogger(__name__)
 
 async def _async_can_discover_devices() -> bool:
     """Attempt local device discovery via UDP broadcast."""
-    _LOGGER.info("[DISCOVERY] Starting local device discovery")
     fut: asyncio.Future[None] = asyncio.get_running_loop().create_future()
 
     @callback
@@ -43,6 +40,9 @@ async def _async_can_discover_devices() -> bool:
             fut.set_result(None)
 
     try:
+        from pyweatherflowudp.client import EVENT_DEVICE_DISCOVERED, WeatherFlowListener
+        from pyweatherflowudp.errors import ListenerError
+
         async with WeatherFlowListener() as client, asyncio.timeout(10):
             client.on(EVENT_DEVICE_DISCOVERED, _found)
             await fut
@@ -76,6 +76,10 @@ class ConfigFlow(AbstractOAuth2FlowHandler, domain=DOMAIN):
     VERSION = 1
     DOMAIN = DOMAIN
 
+    @property
+    def logger(self) -> logging.Logger:
+        return _LOGGER
+
     def _data_schema(self) -> vol.Schema:
         return vol.Schema(
             {vol.Required(DATA_SOURCE, default="local"): vol.In(DATA_SOURCE_OPTIONS)}
@@ -85,9 +89,6 @@ class ConfigFlow(AbstractOAuth2FlowHandler, domain=DOMAIN):
         self, user_input: dict[str, str] | None = None
     ) -> config_entries.ConfigFlowResult:
         """Let the user choose between Local or Cloud mode."""
-        _LOGGER.info(
-            "[STEP_USER] async_step_user called with user_input: %s", user_input
-        )
 
         if user_input is not None:
             mode = user_input[DATA_SOURCE]
@@ -147,5 +148,4 @@ class ConfigFlow(AbstractOAuth2FlowHandler, domain=DOMAIN):
         self, data: dict[str, Any]
     ) -> config_entries.ConfigEntry:
         """Create the config entry after OAuth2 completes."""
-        _LOGGER.info("[OAUTH_CREATE_ENTRY] Token exchange complete, data: %s", data)
         return self.async_create_entry(title="Tempest Station (Cloud)", data=data)
