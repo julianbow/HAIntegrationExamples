@@ -41,7 +41,6 @@ async def _async_can_discover_devices() -> bool:
 
     try:
         from pyweatherflowudp.client import EVENT_DEVICE_DISCOVERED, WeatherFlowListener
-        from pyweatherflowudp.errors import ListenerError
 
         async with WeatherFlowListener() as client, asyncio.timeout(10):
             client.on(EVENT_DEVICE_DISCOVERED, _found)
@@ -49,8 +48,8 @@ async def _async_can_discover_devices() -> bool:
     except TimeoutError:
         _LOGGER.warning("[DISCOVERY] No device discovered within timeout")
         return False
-    except Exception as exc:
-        _LOGGER.exception("[DISCOVERY] Error during discovery: %s", exc)
+    except Exception:
+        _LOGGER.exception("[DISCOVERY] Error during discovery")
         raise
 
     _LOGGER.info("[DISCOVERY] Device discovery successful")
@@ -61,6 +60,7 @@ class TempestPkceImplementation(LocalOAuth2ImplementationWithPkce):
     """PKCE implementation that normalizes provider token response for HA."""
 
     async def async_resolve_external_data(self, external_data: Any) -> dict[str, Any]:
+        """Map the OAuth provider’s token payload into HA’s expected format."""
         raw = await super().async_resolve_external_data(external_data)
         return {
             "access_token": raw.get("access_token"),
@@ -78,6 +78,7 @@ class ConfigFlow(AbstractOAuth2FlowHandler, domain=DOMAIN):
 
     @property
     def logger(self) -> logging.Logger:
+        """Return this flow’s logger."""
         return _LOGGER
 
     def _data_schema(self) -> vol.Schema:
@@ -124,7 +125,9 @@ class ConfigFlow(AbstractOAuth2FlowHandler, domain=DOMAIN):
             errors: dict[str, str] = {}
             try:
                 found = await _async_can_discover_devices()
-            except Exception:
+            except TimeoutError:
+                errors["base"] = ERROR_MSG_CANNOT_CONNECT
+            except OSError:
                 errors["base"] = ERROR_MSG_CANNOT_CONNECT
             else:
                 if not found:
@@ -146,6 +149,6 @@ class ConfigFlow(AbstractOAuth2FlowHandler, domain=DOMAIN):
 
     async def async_oauth_create_entry(
         self, data: dict[str, Any]
-    ) -> config_entries.ConfigEntry:
+    ) -> config_entries.ConfigFlowResult:
         """Create the config entry after OAuth2 completes."""
         return self.async_create_entry(title="Tempest Station (Cloud)", data=data)
